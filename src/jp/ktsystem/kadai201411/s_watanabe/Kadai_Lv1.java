@@ -91,9 +91,7 @@ public class Kadai_Lv1 {
      * @throws KadaiException エラー発生時投げる例外
      */
     public static void readInputOrderFile(String aFileDir, List<String> orderFileNameList,
-            List<String[]> orderInfoList) throws KadaiException {
-
-        String[] oneRecord = new String[5];
+            List<OrderData> allOrderData) throws KadaiException {
 
         // 日付フォーマット作成
         String format = AppConstants.ORDER_DATEFORMAT;
@@ -118,10 +116,14 @@ public class Kadai_Lv1 {
                             br = new BufferedReader(new InputStreamReader
                                     (new FileInputStream(file), AppConstants.CHARACTER_CODE));
 
+                            OrderData oneOrderData = new OrderData();
+
                             // 最終行まで
                             String str = null;
-
                             while (null != (str = br.readLine())) {
+
+                                // 初期化
+                                oneOrderData = new OrderData();
 
                                 // BOM除去
                                 str = CommonUtill.skipBOM(str);
@@ -135,18 +137,28 @@ public class Kadai_Lv1 {
                                         if (4 != j && (null == array[j] || "".equals(array[j]))) {
 
                                             throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
+                                        }
 
-                                        } else if (3 == j) {
-
+                                        switch (j) {
+                                        case 0:
+                                            oneOrderData.setOrderID(array[j]);
+                                            break;
+                                        case 1:
+                                            oneOrderData.setName(array[j]);
+                                            break;
+                                        case 2:
+                                            oneOrderData.setProductName(array[j]);
+                                            break;
+                                        case 3:
                                             // 【数量】整数チェック
                                             try {
                                                 Double.parseDouble(array[j]);
                                             } catch (NumberFormatException e) {
                                                 throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                             }
-
-                                        } else if (4 == j) {
-
+                                            oneOrderData.setQuantity(array[j]);
+                                            break;
+                                        case 4:
                                             // 【納期】yyyymmddフォーマットチェック
                                             if (!"".equals(array[j])) {
                                                 try {
@@ -155,21 +167,20 @@ public class Kadai_Lv1 {
                                                     throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                                 }
                                             }
+                                            oneOrderData.setDeliveryDate(array[j]);
+                                            break;
                                         }
-
-                                        // １ファイルの要素を配列につめる
-                                        oneRecord[j] = array[j];
                                     }
 
                                     // 【受注ID】重複チェック
                                     for (int k = 0; k < i; k++) {
-                                        if (orderInfoList.get(k)[0].equals(oneRecord[0])) {
-                                            orderInfoList.remove(k);
+                                        if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
+                                            allOrderData.remove(k);
                                         }
                                     }
 
                                     // 配列をリストにつめる
-                                    orderInfoList.add(oneRecord.clone());
+                                    allOrderData.add(oneOrderData);
 
                                 } else {
                                     throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
@@ -210,7 +221,7 @@ public class Kadai_Lv1 {
      * @return 出力したレコードの件数または、エラーコード
      * @throws KadaiException エラー発生時投げる例外
      */
-    public static int writeOrderCSV(List<String[]> orderInfoList, String anOutputDir) throws KadaiException {
+    public static int writeOrderCSV(List<OrderData> allOrderData, String anOutputDir) throws KadaiException {
 
         int countOrder = 0;
         String outputFilePath = null;
@@ -232,7 +243,7 @@ public class Kadai_Lv1 {
                     List<String> oneOrder = new ArrayList<String>();
                     List<String> allOrder = new ArrayList<String>();
 
-                    for (int i = 0; i < orderInfoList.size(); i++) {
+                    for (int i = 0; i < allOrderData.size(); i++) {
 
                         // 初期化
                         oneOrder.clear();
@@ -241,12 +252,12 @@ public class Kadai_Lv1 {
                         int total = 0;
 
                         // 受注情報１件分
-                        String[] items = orderInfoList.get(i);
-                        count = Integer.parseInt(items[3]);
+                        OrderData item = allOrderData.get(i);
+                        count = Integer.parseInt(item.getQuantity());
 
                         for (int j = 0; j < allOrder.size(); j++) {
 
-                            if (allOrder.get(j).contains(items[2])) {
+                            if (allOrder.get(j).contains(item.getProductName())) {
                                 // 【製品名】重複チェック
                                 index = allOrder.get(j).indexOf(",");
                                 // 重複した製品の数量合計
@@ -257,7 +268,7 @@ public class Kadai_Lv1 {
                             }
                         }
                         // 【製品名】【数量】１レコードをリストに追加
-                        oneOrder.add(items[2] + "," + count);
+                        oneOrder.add(item.getProductName() + "," + count);
                         allOrder.addAll(oneOrder);
                     }
 

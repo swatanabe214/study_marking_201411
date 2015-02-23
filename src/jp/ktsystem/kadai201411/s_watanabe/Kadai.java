@@ -28,17 +28,17 @@ public class Kadai {
         int countOrder = 0;
         List<String> orderFileNameList = new ArrayList<String>();
         List<String> backupFileNameList = new ArrayList<String>();
-        List<String[]> orderInfoList = new ArrayList<String[]>();
+        List<OrderData> allOrderData = new ArrayList<OrderData>();
 
         try {
             // 受注情報ファイル名のリストを作成
             Kadai_Lv1.inputOrderFileNameList(anOrderFileDir, orderFileNameList, backupFileNameList);
 
             // 受注情報ファイルのリストを作成
-            Kadai_Lv1.readInputOrderFile(anOrderFileDir, orderFileNameList, orderInfoList);
+            Kadai_Lv1.readInputOrderFile(anOrderFileDir, orderFileNameList, allOrderData);
 
             // 受注情報を出力し、レコード件数を返す
-            countOrder = Kadai_Lv1.writeOrderCSV(orderInfoList, anOutputDir);
+            countOrder = Kadai_Lv1.writeOrderCSV(allOrderData, anOutputDir);
             return countOrder;
 
         } catch (KadaiException e) {
@@ -64,8 +64,8 @@ public class Kadai {
         int countOrErrorCode = 0;
         List<String> orderFileNameList = new ArrayList<String>();
         List<String> backupFileNameList = new ArrayList<String>();
-        List<String[]> orderInfoList = new ArrayList<String[]>();
-        List<String[]> incomeInfoList = new ArrayList<String[]>();
+        List<OrderData> allOrderData = new ArrayList<OrderData>();
+        List<IncomeData> allIncomeData = new ArrayList<IncomeData>();
         List<String> allReserveOrder = new ArrayList<String>();
 
         try {
@@ -73,16 +73,16 @@ public class Kadai {
             Kadai_Lv1.inputOrderFileNameList(anOrderFileDir, orderFileNameList, backupFileNameList);
 
             // 退避ファイルを読み込む
-            Kadai_Lv2.readReserveFile(anOutputDir, orderInfoList);
+            Kadai_Lv2.readReserveFile(anOutputDir, allOrderData);
 
             // 受注情報ファイルのリストを作成
-            Kadai_Lv1.readInputOrderFile(anOrderFileDir, orderFileNameList, orderInfoList);
+            Kadai_Lv1.readInputOrderFile(anOrderFileDir, orderFileNameList, allOrderData);
 
             // 入金情報ファイルのリストを作成
-            Kadai_Lv2.readIncomeFile(anIncomeFileDir, incomeInfoList);
+            Kadai_Lv2.readIncomeFile(anIncomeFileDir, allIncomeData);
 
             // 生産指示情報を出力し、レコード件数を返す
-            countOrErrorCode = Kadai_Lv2.writeCreateProductOrderCSV(anOutputDir, orderInfoList, incomeInfoList, allReserveOrder);
+            countOrErrorCode = Kadai_Lv2.writeCreateProductOrderCSV(anOutputDir, allOrderData, allIncomeData, allReserveOrder);
 
             // 退避ファイルへの出力
             if (0 < allReserveOrder.size()) {
