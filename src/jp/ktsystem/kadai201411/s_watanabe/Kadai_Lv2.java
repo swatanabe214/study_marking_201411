@@ -107,55 +107,60 @@ public class Kadai_Lv2 {
 
                     IncomeData oneIncomeData = new IncomeData();
 
+                    int count = 0;
                     // 最終行まで
                     for (String str : fileStrList) {
 
-                        // 初期化
                         oneIncomeData = new IncomeData();
+                        count++;
 
-                        String[] array = str.split(",", -1);
-                        if (2 == array.length) {
+                        if (!"".equals(str) || count != fileStrList.size()) {
+                            
+                            String[] array = str.split(",", -1);
+                            if (2 == array.length) {
 
-                            for (int i = 0; i < array.length; i++) {
+                                for (int i = 0; i < array.length; i++) {
 
-                                // 【受注ID・入金日時】必須チェック
-                                if (null == array[i] || "".equals(array[i])) {
+                                    // 【受注ID・入金日時】必須チェック
+                                    if (null == array[i] || "".equals(array[i])) {
 
-                                    throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-
-                                } else if (1 == i) {
-
-                                    // 【入金日時】yyyymmddhhmmssフォーマットチェック
-                                    try {
-                                        dateFormat.parse(array[i]);
-                                    } catch (ParseException e) {
                                         throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+
+                                    } else if (1 == i) {
+
+                                        // 【入金日時】yyyymmddhhmmssフォーマットチェック
+                                        try {
+                                            dateFormat.parse(array[i]);
+                                        } catch (ParseException e) {
+                                            throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                                        }
+                                    }
+
+                                    // １レコードをデータリストにつめる
+                                    if (0 == i) {
+                                        oneIncomeData.setOrderID(array[i]);
+                                    } else if (1 == i) {
+                                        oneIncomeData.setDateAndTime(array[i]);
                                     }
                                 }
 
-                                // １レコードをデータリストにつめる
-                                if (0 == i) {
-                                    oneIncomeData.setOrderID(array[i]);
-                                } else if (1 == i) {
-                                    oneIncomeData.setDateAndTime(array[i]);
-                                }
-                            }
+                                // 【受注ID】重複チェック
+                                for (int j = 0; j < allIncomeData.size(); j++) {
+                                    if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
 
-                            // 【受注ID】重複チェック
-                            for (int j = 0; j < allIncomeData.size(); j++) {
-                                if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
-
-                                    // 【入金日時】早い方を正とする
-                                    if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime().toString())) {
-                                        allIncomeData.remove(j);
+                                        // 【入金日時】早い方を正とする
+                                        if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
+                                                .toString())) {
+                                            allIncomeData.remove(j);
+                                        }
                                     }
                                 }
-                            }
-                            // リストにつめる
-                            allIncomeData.add(oneIncomeData);
+                                // リストにつめる
+                                allIncomeData.add(oneIncomeData);
 
-                        } else {
-                            throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                            } else {
+                                throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                            }
                         }
                     }
 
