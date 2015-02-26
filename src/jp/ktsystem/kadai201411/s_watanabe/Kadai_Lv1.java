@@ -57,7 +57,7 @@ public class Kadai_Lv1 {
                 }
 
                 // ファイル名ソート
-                Collections.sort(orderFileNameList);
+                Collections.sort(orderFileNameList, new OrderFileComparator());
 
             } else {
                 throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
