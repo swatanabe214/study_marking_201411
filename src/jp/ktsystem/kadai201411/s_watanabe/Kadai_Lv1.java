@@ -36,29 +36,23 @@ public class Kadai_Lv1 {
             // ファイルディレクトリ存在チェック
             if (orderFileDir.exists()) {
 
-                String fileList[] = orderFileDir.list();
+                File fileList[] = orderFileDir.listFiles();
 
                 // ディレクトリ内の要素チェック
                 for (int i = 0; i < fileList.length; i++) {
 
-                    if (null != fileList[i] && !fileList[i].isEmpty()) {
+                    String fileName = null;
+                    String backupFile = null;
+                    fileName = fileList[i].getName();
+                    backupFile = orderFileDir + "\\" + fileList[i];
 
-                        String fileName = null;
-                        String backupFile = null;
-                        fileName = fileList[i];
-                        backupFile = orderFileDir + "\\" + fileList[i];
+                    if (fileName.startsWith(AppConstants.ORDERFILENAME_START)
+                            && fileName.endsWith(AppConstants.EXTENTION_TEXT)) {
 
-                        if (fileName.startsWith(AppConstants.ORDERFILENAME_START)
-                                && fileName.endsWith(AppConstants.EXTENTION_TEXT)) {
-
-                            // 詰めなおし
-                            orderFileNameList.add(fileName);
-                            // バックアップ用
-                            backupFileNameList.add(backupFile);
-
-                        } else {
-                            throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
-                        }
+                        // 詰めなおし
+                        orderFileNameList.add(fileName);
+                        // バックアップ用
+                        backupFileNameList.add(backupFile);
                     }
                 }
 
@@ -249,12 +243,15 @@ public class Kadai_Lv1 {
                     // レコード件数
                     countOrder = allOrder.size();
 
-                    // 出力順：昇順
-                    Collator collator = Collator.getInstance(Locale.JAPANESE);
-                    Collections.sort(allOrder, collator);
+                    if (0 < countOrder) {
 
-                    // 出力ファイルへ書き込み
-                    FileUtil.writeFile(outputFilePath, allOrder);
+                        // 出力順：昇順
+                        Collator collator = Collator.getInstance(Locale.JAPANESE);
+                        Collections.sort(allOrder, collator);
+
+                        // 出力ファイルへ書き込み
+                        FileUtil.writeFile(outputFilePath, allOrder);
+                    }
 
                 } catch (IOException e) {
                     throw new KadaiException(ErrorCode.Q1FILE_OUTPUT_ERROR.getErrorCode());
