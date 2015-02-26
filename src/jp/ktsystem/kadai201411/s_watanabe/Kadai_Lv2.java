@@ -1,12 +1,9 @@
 package jp.ktsystem.kadai201411.s_watanabe;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -15,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
-import jp.ktsystem.kadai201411.common.CommonUtill;
 import jp.ktsystem.kadai201411.common.ErrorCode;
+import jp.ktsystem.kadai201411.common.FileUtil;
 import jp.ktsystem.kadai201411.common.KadaiException;
 
 public class Kadai_Lv2 {
@@ -29,7 +26,7 @@ public class Kadai_Lv2 {
      * @param List<String[]> orderInfoList 受注情報リスト
      * @throws KadaiException エラー発生時投げる例外
      */
-    public static void readReserveFile(String anOutputDir, List<String[]> orderInfoList) throws KadaiException {
+    public static void readReserveFile(String anOutputDir, List<OrderData> allOrderData) throws KadaiException {
 
         if (null != anOutputDir) {
 
@@ -38,43 +35,37 @@ public class Kadai_Lv2 {
             if (reserveFile.exists()) {
                 if (0 < reserveFile.length()) {
 
-                    BufferedReader br = null;
-                    String[] oneRecord = new String[5];
                     try {
 
-                        br = new BufferedReader(new InputStreamReader
-                                (new FileInputStream(reserveFile), AppConstants.CHARACTER_CODE));
+                        // ファイル読み込み
+                        List<String> fileStrList = new ArrayList<String>();
+                        fileStrList.addAll(FileUtil.readFile(reserveFile));
+
+                        OrderData oneOrderData = new OrderData();
 
                         // 最終行まで
-                        String str = null;
-                        while (null != (str = br.readLine())) {
+                        for (String str : fileStrList) {
+
+                            // 初期化
+                            oneOrderData = new OrderData();
 
                             String[] array = str.split(",", -1);
                             if (5 == array.length) {
-                                for (int i = 0; i < array.length; i++) {
-                                    // １ファイルの要素を配列につめる
-                                    oneRecord[i] = array[i];
-                                }
+                                oneOrderData.setOrderID(array[0]);
+                                oneOrderData.setName(array[1]);
+                                oneOrderData.setProductName(array[2]);
+                                oneOrderData.setQuantity(array[3]);
+                                oneOrderData.setDeliveryDate(array[4]);
 
                                 // 配列をリストにつめる
-                                orderInfoList.add(oneRecord.clone());
+                                allOrderData.add(oneOrderData);
 
                             } else {
                                 throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
                             }
                         }
-
                     } catch (IOException e) {
                         throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
-                    } finally {
-
-                        if (null != br) {
-                            try {
-                                br.close();
-                            } catch (IOException e) {
-                                // finallyでは例外投げない
-                            }
-                        }
                     }
                 }
             }
@@ -90,10 +81,7 @@ public class Kadai_Lv2 {
      * @param List<String[]> incomeInfoList 入金情報ファイルリスト
      * @throws KadaiException エラー発生時投げる例外
      */
-    public static void readIncomeFile(String anIncomeFileDir, List<String[]> incomeInfoList) throws KadaiException {
-
-        BufferedReader br = null;
-        String[] oneRecord = new String[2];
+    public static void readIncomeFile(String anIncomeFileDir, List<IncomeData> allIncomeData) throws KadaiException {
 
         // 日付フォーマット作成
         String format = AppConstants.INCOME_DATEFORMAT;
@@ -113,15 +101,17 @@ public class Kadai_Lv2 {
 
                 try {
 
-                    br = new BufferedReader(new InputStreamReader
-                            (new FileInputStream(incomeFile), AppConstants.CHARACTER_CODE));
+                    // ファイル読み込み
+                    List<String> fileStrList = new ArrayList<String>();
+                    fileStrList.addAll(FileUtil.readFile(incomeFile));
+
+                    IncomeData oneIncomeData = new IncomeData();
 
                     // 最終行まで
-                    String str = null;
-                    while (null != (str = br.readLine())) {
+                    for (String str : fileStrList) {
 
-                        // BOM除去
-                        str = CommonUtill.skipBOM(str);
+                        // 初期化
+                        oneIncomeData = new IncomeData();
 
                         String[] array = str.split(",", -1);
                         if (2 == array.length) {
@@ -143,22 +133,26 @@ public class Kadai_Lv2 {
                                     }
                                 }
 
-                                // １レコードを配列につめる
-                                oneRecord[i] = array[i];
+                                // １レコードをデータリストにつめる
+                                if (0 == i) {
+                                    oneIncomeData.setOrderID(array[i]);
+                                } else if (1 == i) {
+                                    oneIncomeData.setDateAndTime(array[i]);
+                                }
                             }
 
                             // 【受注ID】重複チェック
-                            for (int j = 0; j < incomeInfoList.size(); j++) {
-                                if (incomeInfoList.get(j)[0].equals(oneRecord[0])) {
+                            for (int j = 0; j < allIncomeData.size(); j++) {
+                                if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
 
                                     // 【入金日時】早い方を正とする
-                                    if (Long.parseLong(oneRecord[1].toString()) <= Long.parseLong(incomeInfoList.get(j)[1].toString())) {
-                                        incomeInfoList.remove(j);
+                                    if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime().toString())) {
+                                        allIncomeData.remove(j);
                                     }
                                 }
                             }
                             // リストにつめる
-                            incomeInfoList.add(oneRecord.clone());
+                            allIncomeData.add(oneIncomeData);
 
                         } else {
                             throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
@@ -167,14 +161,6 @@ public class Kadai_Lv2 {
 
                 } catch (IOException e) {
                     throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
-                } finally {
-                    if (null != br) {
-                        try {
-                            br.close();
-                        } catch (IOException e) {
-                            // finallyでは例外投げない
-                        }
-                    }
                 }
             } else {
                 throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
@@ -195,8 +181,8 @@ public class Kadai_Lv2 {
      * @return 出力したレコード件数。またはエラーコード。
      * @throws KadaiException エラー発生時投げる例外
      */
-    public static int writeCreateProductOrderCSV(String anOutputDir, List<String[]> orderInfoList,
-            List<String[]> incomeInfoList, List<String> allReserveOrder) throws KadaiException {
+    public static int writeCreateProductOrderCSV(String anOutputDir, List<OrderData> allOrderData,
+            List<IncomeData> allIncomeData, List<String> allReserveOrder) throws KadaiException {
 
         int countOrErrorCode = 0;
         String productOutputFilePath = null;
@@ -220,7 +206,7 @@ public class Kadai_Lv2 {
                     List<String> reserveOrder = new ArrayList<String>();
 
                     // 受注情報リスト
-                    for (int i = 0; i < orderInfoList.size(); i++) {
+                    for (int i = 0; i < allOrderData.size(); i++) {
 
                         // 初期化
                         oneProductOrder = new ProductOrder();
@@ -229,26 +215,26 @@ public class Kadai_Lv2 {
                         int k = 0;
 
                         // １件分の受注情報
-                        String[] items = orderInfoList.get(i);
-                        orderID = items[0];
+                        OrderData items = allOrderData.get(i);
+                        orderID = items.getOrderID();
 
                         // 退避受注情報リスト
-                        reserveOrder.add(items[0] + "," + items[1] + "," + items[2] + ","
-                                + items[3] + "," + items[4]);
+                        reserveOrder.add(items.getOrderID() + "," + items.getName() + "," + items.getProductName() + ","
+                                + items.getQuantity() + "," + items.getDeliveryDate());
                         allReserveOrder.addAll(reserveOrder);
 
                         // 入金情報リスト
-                        for (int j = 0; j < incomeInfoList.size(); j++) {
+                        for (int j = 0; j < allIncomeData.size(); j++) {
 
-                            if (orderID.equals(incomeInfoList.get(j)[0])) {
+                            if (orderID.equals(allIncomeData.get(j).getOrderID())) {
 
                                 // 生産指示情報に入金日時追加
-                                oneProductOrder.setOrderID(items[0]);
-                                oneProductOrder.setName(items[1]);
-                                oneProductOrder.setProductName(items[2]);
-                                oneProductOrder.setQuantity(items[3]);
-                                oneProductOrder.setDeliveryDate(items[4]);
-                                oneProductOrder.setDateAndTime(incomeInfoList.get(j)[1]);
+                                oneProductOrder.setOrderID(items.getOrderID());
+                                oneProductOrder.setName(items.getName());
+                                oneProductOrder.setProductName(items.getProductName());
+                                oneProductOrder.setQuantity(items.getQuantity());
+                                oneProductOrder.setDeliveryDate(items.getDeliveryDate());
+                                oneProductOrder.setDateAndTime(allIncomeData.get(j).getDateAndTime());
 
                                 allProductOrder.add(oneProductOrder);
                                 // レコード件数
@@ -256,8 +242,8 @@ public class Kadai_Lv2 {
 
                                 // 退避受注情報リストから生産指示情報を削除
                                 if (0 < allReserveOrder.size()) {
-                                    k = allReserveOrder.indexOf(items[0] + "," + items[1] + "," + items[2] + ","
-                                            + items[3] + "," + items[4]);
+                                    k = allReserveOrder.indexOf(items.getOrderID() + "," + items.getName() + "," + items.getProductName() + ","
+                                            + items.getQuantity() + "," + items.getDeliveryDate());
                                     allReserveOrder.remove(k);
                                 }
                             }
@@ -277,7 +263,6 @@ public class Kadai_Lv2 {
                             bw.newLine(); // 最終行は改行しない
                         }
                     }
-
                 } catch (IOException e) {
                     return ErrorCode.CREATEPRODUCTORDER_OUTPUT_ERROR.getErrorCode();
                 } finally {
@@ -290,7 +275,6 @@ public class Kadai_Lv2 {
                         }
                     }
                 }
-
             } else {
                 return ErrorCode.CREATEPRODUCTORDER_OUTPUT_ERROR.getErrorCode();
             }
