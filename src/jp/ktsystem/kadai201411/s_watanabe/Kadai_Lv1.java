@@ -44,7 +44,7 @@ public class Kadai_Lv1 {
                     String fileName = null;
                     String backupFile = null;
                     fileName = fileList[i].getName();
-                    backupFile = orderFileDir + "\\" + fileList[i];
+                    backupFile = orderFileDir + "\\" + fileName;
 
                     if (fileName.startsWith(AppConstants.ORDERFILENAME_START)
                             && fileName.endsWith(AppConstants.EXTENTION_TEXT)) {
@@ -87,6 +87,7 @@ public class Kadai_Lv1 {
         // 日付の厳密チェックON
         dateFormat.setLenient(false);
 
+        int count = 0;
         // 受注情報ファイルを一つずつ処理する
         for (int i = 0; i < orderFileNameList.size(); i++) {
 
@@ -107,14 +108,15 @@ public class Kadai_Lv1 {
 
                             OrderData oneOrderData = new OrderData();
 
-                            int count = 0;
+                            int rowCount = 0;
                             // 最終行まで
                             for (String str : fileStrList) {
 
                                 oneOrderData = new OrderData();
                                 count++;
+                                rowCount++;
 
-                                if (!"".equals(str) || count != fileStrList.size()) {
+                                if (!"".equals(str) || rowCount != fileStrList.size()) {
 
                                     String[] array = str.split(",", -1);
                                     if (5 == array.length) {
@@ -159,9 +161,10 @@ public class Kadai_Lv1 {
                                         }
 
                                         // 【受注ID】重複チェック
-                                        for (int k = 0; k < i; k++) {
+                                        for (int k = 0; k < count - 1; k++) {
                                             if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
                                                 allOrderData.remove(k);
+                                                count--;
                                             }
                                         }
 
