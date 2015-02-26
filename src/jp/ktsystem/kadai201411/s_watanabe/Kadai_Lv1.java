@@ -142,9 +142,7 @@ public class Kadai_Lv1 {
                                             break;
                                         case 3:
                                             // 【数量】整数チェック
-                                            try {
-                                                Double.parseDouble(array[j]);
-                                            } catch (NumberFormatException e) {
+                                            if (!array[j].matches("^[0-9]+$")) {
                                                 throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                             }
                                             oneOrderData.setQuantity(array[j]);
