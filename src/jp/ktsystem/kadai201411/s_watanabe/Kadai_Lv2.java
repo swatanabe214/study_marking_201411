@@ -115,7 +115,7 @@ public class Kadai_Lv2 {
                         count++;
 
                         if (!"".equals(str) || count != fileStrList.size()) {
-                            
+
                             String[] array = str.split(",", -1);
                             if (2 == array.length) {
 
