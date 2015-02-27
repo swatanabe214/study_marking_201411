@@ -48,7 +48,7 @@ public class Kadai_Lv2 {
                         if (false == FileUtil.isUTF8(bytes)) {
                             throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
                         }
-                        
+
                         // ファイル読み込み
                         List<String> fileStrList = new ArrayList<String>();
                         fileStrList.addAll(FileUtil.readFile(reserveFile));
@@ -113,12 +113,12 @@ public class Kadai_Lv2 {
             if (0 < incomeFile.length()) {
 
                 try {
-                    
+
                     // 文字コード（UTF-8）判定
                     Path path = Paths.get(incomeFilePath);
                     byte[] bytes = Files.readAllBytes(path);
                     if (false == FileUtil.isUTF8(bytes)) {
-                        throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
+                        throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
                     }
 
                     // ファイル読み込み
