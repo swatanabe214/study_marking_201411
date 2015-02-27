@@ -9,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
@@ -23,14 +24,14 @@ public class Kadai_Lv2 {
      * 異常系の場合、エラーコードを投げます。</p>
      *
      * @param String anOutputDir 退避ファイルディレクトリ
-     * @param List<String[]> orderInfoList 受注情報リスト
+     * @param List<String> orderInfoList 受注情報リスト
      * @throws KadaiException エラー発生時投げる例外
      */
     public static void readReserveFile(String anOutputDir, List<OrderData> allOrderData) throws KadaiException {
 
         if (null != anOutputDir) {
 
-            File reserveFile = new File(anOutputDir + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
+            File reserveFile = new File(anOutputDir + "\\" + AppConstants.RESERVE_DIR + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
 
             if (reserveFile.exists()) {
                 if (0 < reserveFile.length()) {
@@ -255,6 +256,11 @@ public class Kadai_Lv2 {
                             reserveOrder.clear();
                         }
                     }
+
+                    HashSet<String> hushSet = new HashSet<>();
+                    hushSet.addAll(allReserveOrder);
+                    allReserveOrder = new ArrayList<String>();
+                    allReserveOrder.addAll(hushSet);
 
                     // ソート：入金日時の昇順。入金日時が同じ場合は受注IDの昇順。
                     Collections.sort(allProductOrder, new ProductOrderComparator());
