@@ -2,6 +2,9 @@ package jp.ktsystem.kadai201411.s_watanabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -101,6 +104,13 @@ public class Kadai_Lv1 {
                     if (0 < file.length()) {
 
                         try {
+
+                            // 文字コード（UTF-8）判定
+                            Path path = Paths.get(filePath);
+                            byte[] bytes = Files.readAllBytes(path);
+                            if (false == FileUtil.isUTF8(bytes)) {
+                                throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
+                            }
 
                             // ファイル読み込み
                             List<String> fileStrList = new ArrayList<String>();

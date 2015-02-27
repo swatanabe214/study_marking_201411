@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,13 +34,21 @@ public class Kadai_Lv2 {
 
         if (null != anOutputDir) {
 
-            File reserveFile = new File(anOutputDir + "\\" + AppConstants.RESERVE_DIR + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
+            String reserveFilePath = anOutputDir + "\\" + AppConstants.RESERVE_DIR + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME;
+            File reserveFile = new File(reserveFilePath);
 
             if (reserveFile.exists()) {
                 if (0 < reserveFile.length()) {
 
                     try {
 
+                        // 文字コード（UTF-8）判定
+                        Path path = Paths.get(reserveFilePath);
+                        byte[] bytes = Files.readAllBytes(path);
+                        if (false == FileUtil.isUTF8(bytes)) {
+                            throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
+                        }
+                        
                         // ファイル読み込み
                         List<String> fileStrList = new ArrayList<String>();
                         fileStrList.addAll(FileUtil.readFile(reserveFile));
@@ -94,13 +105,21 @@ public class Kadai_Lv2 {
             throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
         }
 
-        File incomeFile = new File(anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME);
+        String incomeFilePath = anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME;
+        File incomeFile = new File(incomeFilePath);
 
         // 入金情報ファイル存在チェック
         if (incomeFile.exists()) {
             if (0 < incomeFile.length()) {
 
                 try {
+                    
+                    // 文字コード（UTF-8）判定
+                    Path path = Paths.get(incomeFilePath);
+                    byte[] bytes = Files.readAllBytes(path);
+                    if (false == FileUtil.isUTF8(bytes)) {
+                        throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
+                    }
 
                     // ファイル読み込み
                     List<String> fileStrList = new ArrayList<String>();
