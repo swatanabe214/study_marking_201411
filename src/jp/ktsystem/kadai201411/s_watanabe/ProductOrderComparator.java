@@ -18,8 +18,8 @@ public class ProductOrderComparator implements Comparator<ProductOrder> {
         String id1 = o1.getOrderID();
         String id2 = o2.getOrderID();
 
-        if (date1 == date2) {
-            return Integer.parseInt(id1) - Integer.parseInt(id2);
+        if (date1.equals(date2)) {
+            return id1.compareTo(id2);
         } else if (Double.parseDouble(date1) > Double.parseDouble(date2)) {
             return 1;
         } else {

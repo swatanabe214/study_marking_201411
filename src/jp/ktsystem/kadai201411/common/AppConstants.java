@@ -21,9 +21,9 @@ public class AppConstants {
     /** 入金情報ファイル名 */
     public static final String INCOME_FILENAME = "income.txt";
     /** 受注情報：日付フォーマット */
-    public static final String ORDER_DATEFORMAT = "yyyymmdd";
+    public static final String ORDER_DATEFORMAT = "yyyyMMdd";
     /** 入金情報：日付フォーマット */
-    public static final String INCOME_DATEFORMAT = "yyyymmddhhmmss";
+    public static final String INCOME_DATEFORMAT = "yyyyMMddHHmmss";
     /** 生産指示情報ファイル名 */
     public static final String PRODUCTORDER_OUTPUTFILENAME = "productorder.out";
     /** 退避ファイルディレクトリ */

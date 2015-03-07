@@ -15,14 +15,14 @@ public class ProductOrder {
     // 製品名
     private String productName;
     // 数量
-    private String quantity;
+    private int quantity;
     // 納期
     private String deliveryDate;
     // 入金日時
     private String dateAndTime;
 
     public ProductOrder(String orderID, String name, String productName,
-            String quantity, String deliveryDate, String dateAndTime) {
+            int quantity, String deliveryDate, String dateAndTime) {
 
         this.orderID = orderID;
         this.name = name;
@@ -47,7 +47,7 @@ public class ProductOrder {
         this.productName = productName;
     }
 
-    public void setQuantity(String quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
 
@@ -71,7 +71,7 @@ public class ProductOrder {
         return this.productName;
     }
 
-    public String getQuantity() {
+    public int getQuantity() {
         return this.quantity;
     }
 
