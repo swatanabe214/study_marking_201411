@@ -172,6 +172,7 @@ public class Kadai_Lv2 {
                                         if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
                                                 .toString())) {
                                             allIncomeData.remove(j);
+                                            break;
                                         }
                                     }
                                 }

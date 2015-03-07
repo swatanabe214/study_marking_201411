@@ -175,6 +175,7 @@ public class Kadai_Lv1 {
                                             if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
                                                 allOrderData.remove(k);
                                                 count--;
+                                                break;
                                             }
                                         }
 
