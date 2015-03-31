@@ -114,10 +114,10 @@ public class FileUtil {
             }
         }
     }
-    
+
     /**
      * <p>文字コードを判定します。</p>
-     * 
+     *
      * @param byte[] src チェックする文字列
      * @return
      */
