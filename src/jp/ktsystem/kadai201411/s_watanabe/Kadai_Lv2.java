@@ -113,7 +113,6 @@ public class Kadai_Lv2 {
             if (0 < incomeFile.length()) {
 
                 try {
-
                     // 文字コード（UTF-8）判定
                     Path path = Paths.get(incomeFilePath);
                     byte[] bytes = Files.readAllBytes(path);
@@ -121,69 +120,12 @@ public class Kadai_Lv2 {
                         throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
                     }
 
-                    // ファイル読み込み
+                    // 入金情報ファイル読み込み
                     List<String> fileStrList = new ArrayList<String>();
                     fileStrList.addAll(FileUtil.readFile(incomeFile));
 
-                    IncomeData oneIncomeData = new IncomeData();
-
-                    int count = 0;
-                    // 最終行まで
-                    for (String str : fileStrList) {
-
-                        oneIncomeData = new IncomeData();
-                        count++;
-
-                        if (!"".equals(str) || count != fileStrList.size()) {
-
-                            String[] array = str.split(",", -1);
-                            if (2 == array.length) {
-
-                                for (int i = 0; i < array.length; i++) {
-
-                                    // 【受注ID・入金日時】必須チェック
-                                    if (null == array[i] || "".equals(array[i])) {
-
-                                        throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-
-                                    } else if (1 == i) {
-
-                                        // 【入金日時】yyyymmddhhmmssフォーマットチェック
-                                        try {
-                                            dateFormat.parse(array[i]);
-                                        } catch (ParseException e) {
-                                            throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-                                        }
-                                    }
-
-                                    // １レコードをデータリストにつめる
-                                    if (0 == i) {
-                                        oneIncomeData.setOrderID(array[i]);
-                                    } else if (1 == i) {
-                                        oneIncomeData.setDateAndTime(array[i]);
-                                    }
-                                }
-
-                                // 【受注ID】重複チェック
-                                for (int j = 0; j < allIncomeData.size(); j++) {
-                                    if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
-
-                                        // 【入金日時】早い方を正とする
-                                        if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
-                                                .toString())) {
-                                            allIncomeData.remove(j);
-                                            break;
-                                        }
-                                    }
-                                }
-                                // リストにつめる
-                                allIncomeData.add(oneIncomeData);
-
-                            } else {
-                                throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-                            }
-                        }
-                    }
+                    // 入金情報リストの作成
+                    createIncomeFileList(fileStrList, dateFormat, allIncomeData);
 
                 } catch (IOException e) {
                     throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
@@ -193,6 +135,108 @@ public class Kadai_Lv2 {
             }
         } else {
             throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
+        }
+    }
+
+    /**
+     * <p>入金情報リストを作成します。</p>
+     *
+     * @param List<String> fileStrList 読み込んだ入金情報
+     * @param SimpleDateFormat dateFormat 日付フォーマット
+     * @param List<IncomeData> allIncomeData 入金情報リスト
+     * @throws KadaiException 例外発生時投げる例外
+     */
+    public static void createIncomeFileList(List<String> fileStrList,
+            SimpleDateFormat dateFormat, List<IncomeData> allIncomeData) throws KadaiException {
+
+        IncomeData oneIncomeData = new IncomeData();
+
+        // 最終行まで
+        for (int count = 0; count < fileStrList.size(); count++) {
+
+            String str = fileStrList.get(count);
+            oneIncomeData = new IncomeData();
+
+            if (!"".equals(str) || count != fileStrList.size()) {
+
+                String[] array = str.split(",", -1);
+                if (2 == array.length) {
+
+                    // 入金情報のデータチェック
+                    oneIncomeData = checkIncomeData(array, dateFormat, oneIncomeData);
+
+                    // 【受注ID】重複チェック
+                    removeSameID(oneIncomeData, allIncomeData);
+
+                    // リストにつめる
+                    allIncomeData.add(oneIncomeData);
+
+                } else {
+                    throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                }
+            }
+        }
+    }
+
+    /**
+     * <p>入金情報のデータをチェックします。</p>
+     *
+     * @param String[] array 入金情報
+     * @param SimpleDateFormat dateFormat 日付フォーマット
+     * @param IncomeData oneIncomeData 入金情報データクラス
+     * @return 入金情報１件
+     * @throws KadaiException エラー発生時投げる例外
+     */
+    public static IncomeData checkIncomeData(String[] array,
+            SimpleDateFormat dateFormat, IncomeData oneIncomeData) throws KadaiException {
+
+        for (int i = 0; i < array.length; i++) {
+
+            // 【受注ID・入金日時】必須チェック
+            if (null == array[i] || "".equals(array[i])) {
+
+                throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+
+            } else if (1 == i) {
+
+                // 【入金日時】yyyymmddhhmmssフォーマットチェック
+                try {
+                    dateFormat.parse(array[i]);
+                } catch (ParseException e) {
+                    throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                }
+            }
+
+            // １レコードをデータリストにつめる
+            if (0 == i) {
+                oneIncomeData.setOrderID(array[i]);
+            } else if (1 == i) {
+                oneIncomeData.setDateAndTime(array[i]);
+            }
+        }
+
+        return oneIncomeData;
+    }
+
+    /**
+     * <p>受注IDが重複している入金情報リストのデータを削除します。</p>
+     *
+     * @param IncomeData oneIncomeData 入金情報
+     * @param List<IncomeData> allIncomeData 入金情報リスト
+     */
+    public static void removeSameID(IncomeData oneIncomeData, List<IncomeData> allIncomeData) {
+
+        // 【受注ID】重複チェック
+        for (int j = 0; j < allIncomeData.size(); j++) {
+            if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
+
+                // 【入金日時】早い方を正とする
+                if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
+                        .toString())) {
+                    allIncomeData.remove(j);
+                    break;
+                }
+            }
         }
     }
 
