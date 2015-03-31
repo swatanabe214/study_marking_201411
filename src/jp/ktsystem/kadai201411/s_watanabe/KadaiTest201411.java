@@ -113,7 +113,7 @@ public class KadaiTest201411 {
     @Test
     public void testCase012() {
         assertEqualsFailLv2("inputTest\\order_info_01(正常系)", "inputTest\\income_info_02(必須)",
-                "outputTest\\productorder_info_02", "outputTest\\productorder_info_02", -4);
+                "outputTest\\productorder_info_01", "outputTest\\productorder_info_02", -4);
     }
 
     /**
@@ -176,7 +176,7 @@ public class KadaiTest201411 {
     @Test
     public void testCase019() {
         assertEqualsLv2("inputTest\\order_info_01(正常系)", "inputTest\\income_info_01(正常系)",
-                "outputTest\\productorder_info_02\\reserve", "outputTest\\productorder_info_01", -6);
+                "outputTest\\productorder_info_02", "outputTest\\productorder_info_01", -6);
     }
 
     /**
