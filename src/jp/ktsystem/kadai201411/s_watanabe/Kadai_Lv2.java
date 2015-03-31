@@ -145,7 +145,7 @@ public class Kadai_Lv2 {
      * @param List<String> fileStrList 読み込んだ入金情報
      * @param SimpleDateFormat dateFormat 日付フォーマット
      * @param List<IncomeData> allIncomeData 入金情報リスト
-     * @throws KadaiException 例外発生時投げる例外
+     * @throws KadaiException エラー発生時投げる例外
      */
     public static void createIncomeFileList(List<String> fileStrList,
             SimpleDateFormat dateFormat, List<IncomeData> allIncomeData) throws KadaiException {
