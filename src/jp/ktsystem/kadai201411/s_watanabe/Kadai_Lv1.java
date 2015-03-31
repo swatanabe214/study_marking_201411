@@ -1,13 +1,10 @@
 package jp.ktsystem.kadai201411.s_watanabe;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,8 +14,8 @@ import java.util.List;
 import java.util.Locale;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
-import jp.ktsystem.kadai201411.common.CommonUtill;
 import jp.ktsystem.kadai201411.common.ErrorCode;
+import jp.ktsystem.kadai201411.common.FileUtil;
 import jp.ktsystem.kadai201411.common.KadaiException;
 
 public class Kadai_Lv1 {
@@ -42,34 +39,28 @@ public class Kadai_Lv1 {
             // ファイルディレクトリ存在チェック
             if (orderFileDir.exists()) {
 
-                String fileList[] = orderFileDir.list();
+                File fileList[] = orderFileDir.listFiles();
 
                 // ディレクトリ内の要素チェック
                 for (int i = 0; i < fileList.length; i++) {
 
-                    if (null != fileList[i] && !fileList[i].isEmpty()) {
+                    String fileName = null;
+                    String backupFile = null;
+                    fileName = fileList[i].getName();
+                    backupFile = orderFileDir + "\\" + fileName;
 
-                        String fileName = null;
-                        String backupFile = null;
-                        fileName = fileList[i];
-                        backupFile = orderFileDir + "\\" + fileList[i];
+                    if (fileName.startsWith(AppConstants.ORDERFILENAME_START)
+                            && fileName.endsWith(AppConstants.EXTENTION_TEXT)) {
 
-                        if (fileName.startsWith(AppConstants.ORDERFILENAME_START)
-                                && fileName.endsWith(AppConstants.EXTENTION_TEXT)) {
-
-                            // 詰めなおし
-                            orderFileNameList.add(fileName);
-                            // バックアップ用
-                            backupFileNameList.add(backupFile);
-
-                        } else {
-                            throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
-                        }
+                        // 詰めなおし
+                        orderFileNameList.add(fileName);
+                        // バックアップ用
+                        backupFileNameList.add(backupFile);
                     }
                 }
 
                 // ファイル名ソート
-                Collections.sort(orderFileNameList);
+                Collections.sort(orderFileNameList, new OrderFileComparator());
 
             } else {
                 throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
@@ -99,8 +90,10 @@ public class Kadai_Lv1 {
         // 日付の厳密チェックON
         dateFormat.setLenient(false);
 
+        int count = 0;
         // 受注情報ファイルを一つずつ処理する
         for (int i = 0; i < orderFileNameList.size(); i++) {
+
             String filePath = aFileDir + "\\" + (String) orderFileNameList.get(i);
 
             if (null != filePath) {
@@ -110,96 +103,93 @@ public class Kadai_Lv1 {
                 if (file.exists()) {
                     if (0 < file.length()) {
 
-                        BufferedReader br = null;
                         try {
 
-                            br = new BufferedReader(new InputStreamReader
-                                    (new FileInputStream(file), AppConstants.CHARACTER_CODE));
+                            // 文字コード（UTF-8）判定
+                            Path path = Paths.get(filePath);
+                            byte[] bytes = Files.readAllBytes(path);
+                            if (false == FileUtil.isUTF8(bytes)) {
+                                throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
+                            }
+
+                            // ファイル読み込み
+                            List<String> fileStrList = new ArrayList<String>();
+                            fileStrList.addAll(FileUtil.readFile(file));
 
                             OrderData oneOrderData = new OrderData();
 
+                            int rowCount = 0;
                             // 最終行まで
-                            String str = null;
-                            while (null != (str = br.readLine())) {
+                            for (String str : fileStrList) {
 
-                                // 初期化
                                 oneOrderData = new OrderData();
+                                count++;
+                                rowCount++;
 
-                                // BOM除去
-                                str = CommonUtill.skipBOM(str);
+                                if (!"".equals(str) || rowCount != fileStrList.size()) {
 
-                                String[] array = str.split(",", -1);
-                                if (5 == array.length) {
+                                    String[] array = str.split(",", -1);
+                                    if (5 == array.length) {
 
-                                    for (int j = 0; j < array.length; j++) {
+                                        for (int j = 0; j < array.length; j++) {
 
-                                        // 【受注ID・顧客名・製品名・数量】必須チェック
-                                        if (4 != j && (null == array[j] || "".equals(array[j]))) {
+                                            // 【受注ID・顧客名・製品名・数量】必須チェック
+                                            if (4 != j && (null == array[j] || "".equals(array[j]))) {
 
-                                            throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
-                                        }
-
-                                        switch (j) {
-                                        case 0:
-                                            oneOrderData.setOrderID(array[j]);
-                                            break;
-                                        case 1:
-                                            oneOrderData.setName(array[j]);
-                                            break;
-                                        case 2:
-                                            oneOrderData.setProductName(array[j]);
-                                            break;
-                                        case 3:
-                                            // 【数量】整数チェック
-                                            try {
-                                                Double.parseDouble(array[j]);
-                                            } catch (NumberFormatException e) {
                                                 throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                             }
-                                            oneOrderData.setQuantity(array[j]);
-                                            break;
-                                        case 4:
-                                            // 【納期】yyyymmddフォーマットチェック
-                                            if (!"".equals(array[j])) {
-                                                try {
-                                                    dateFormat.parse(array[j]);
-                                                } catch (ParseException e) {
+
+                                            switch (j) {
+                                            case 0:
+                                                oneOrderData.setOrderID(array[j]);
+                                                break;
+                                            case 1:
+                                                oneOrderData.setName(array[j]);
+                                                break;
+                                            case 2:
+                                                oneOrderData.setProductName(array[j]);
+                                                break;
+                                            case 3:
+                                                // 【数量】整数チェック
+                                                if (!array[j].matches("^[0-9]+$")) {
                                                     throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                                 }
+                                                oneOrderData.setQuantity(Integer.parseInt(array[j]));
+                                                break;
+                                            case 4:
+                                                // 【納期】yyyymmddフォーマットチェック
+                                                if (!"".equals(array[j])) {
+                                                    try {
+                                                        dateFormat.parse(array[j]);
+                                                    } catch (ParseException e) {
+                                                        throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
+                                                    }
+                                                }
+                                                oneOrderData.setDeliveryDate(array[j]);
+                                                break;
                                             }
-                                            oneOrderData.setDeliveryDate(array[j]);
-                                            break;
                                         }
-                                    }
 
-                                    // 【受注ID】重複チェック
-                                    for (int k = 0; k < i; k++) {
-                                        if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
-                                            allOrderData.remove(k);
+                                        // 【受注ID】重複チェック
+                                        for (int k = 0; k < count - 1; k++) {
+                                            if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
+                                                allOrderData.remove(k);
+                                                count--;
+                                                break;
+                                            }
                                         }
+
+                                        // 配列をリストにつめる
+                                        allOrderData.add(oneOrderData);
+
+                                    } else {
+                                        throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                     }
-
-                                    // 配列をリストにつめる
-                                    allOrderData.add(oneOrderData);
-
-                                } else {
-                                    throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                 }
                             }
 
                         } catch (IOException e) {
-
                             throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
-
-                        } finally {
-
-                            if (null != br) {
-                                try {
-                                    br.close();
-                                } catch (IOException e) {
-                                    // finallyでは例外投げない
-                                }
-                            }
                         }
                     } else {
                         throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
@@ -225,7 +215,6 @@ public class Kadai_Lv1 {
 
         int countOrder = 0;
         String outputFilePath = null;
-        BufferedWriter bw = null;
 
         if (null != anOutputDir) {
 
@@ -236,9 +225,6 @@ public class Kadai_Lv1 {
                 outputFilePath = orderFileDir + AppConstants.ORDER_OUTPUTFILENAME;
 
                 try {
-
-                    bw = new BufferedWriter(new OutputStreamWriter
-                            (new FileOutputStream(outputFilePath), AppConstants.CHARACTER_CODE));
 
                     List<String> oneOrder = new ArrayList<String>();
                     List<String> allOrder = new ArrayList<String>();
@@ -253,7 +239,7 @@ public class Kadai_Lv1 {
 
                         // 受注情報１件分
                         OrderData item = allOrderData.get(i);
-                        count = Integer.parseInt(item.getQuantity());
+                        count = item.getQuantity();
 
                         for (int j = 0; j < allOrder.size(); j++) {
 
@@ -275,29 +261,18 @@ public class Kadai_Lv1 {
                     // レコード件数
                     countOrder = allOrder.size();
 
-                    // 出力順：昇順
-                    Collator collator = Collator.getInstance(Locale.JAPANESE);
-                    Collections.sort(allOrder, collator);
+                    if (0 < countOrder) {
 
-                    // 出力ファイルへ書き込み
-                    for (int k = 0; k < allOrder.size(); k++) {
-                        bw.write(allOrder.get(k));
-                        if (allOrder.size() - 1 != k) {
-                            bw.newLine(); // 最終行は改行しない
-                        }
+                        // 出力順：昇順
+                        Collator collator = Collator.getInstance(Locale.JAPANESE);
+                        Collections.sort(allOrder, collator);
+
+                        // 出力ファイルへ書き込み
+                        FileUtil.writeFile(outputFilePath, allOrder);
                     }
 
                 } catch (IOException e) {
                     throw new KadaiException(ErrorCode.Q1FILE_OUTPUT_ERROR.getErrorCode());
-                } finally {
-                    if (null != bw) {
-                        try {
-                            bw.close();
-                            bw.flush();
-                        } catch (IOException e) {
-                            // finallyでは例外投げない
-                        }
-                    }
                 }
 
             } else {
