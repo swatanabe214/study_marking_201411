@@ -20,7 +20,6 @@ public class ProductOrderComparator implements Comparator<ProductOrder> {
 
         if (date1.equals(date2)) {
             return id1.compareTo(id2);
-//            return Integer.parseInt(id1) - Integer.parseInt(id2);
         } else if (Double.parseDouble(date1) > Double.parseDouble(date2)) {
             return 1;
         } else {
