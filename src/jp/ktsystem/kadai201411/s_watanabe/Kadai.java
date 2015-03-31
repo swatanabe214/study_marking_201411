@@ -1,15 +1,13 @@
 package jp.ktsystem.kadai201411.s_watanabe;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
 import jp.ktsystem.kadai201411.common.ErrorCode;
+import jp.ktsystem.kadai201411.common.FileUtil;
 import jp.ktsystem.kadai201411.common.KadaiException;
 
 public class Kadai {
@@ -111,7 +109,6 @@ public class Kadai {
      */
     private static String writeReserveFile(String anOutputDir, List<String> allReserveOrder) throws KadaiException {
 
-        BufferedWriter bw = null;
         String reserveFileDir = anOutputDir + "\\" + AppConstants.RESERVE_DIR;
 
         try {
@@ -119,28 +116,13 @@ public class Kadai {
             File newDir = new File(reserveFileDir);
             newDir.mkdir();
 
-            File file = new File(reserveFileDir + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
-            bw = new BufferedWriter(new OutputStreamWriter
-                    (new FileOutputStream(file), AppConstants.CHARACTER_CODE));
+            String filePath = reserveFileDir + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME;
 
-            for (int i = 0; i < allReserveOrder.size(); i++) {
-                bw.write(allReserveOrder.get(i));
-                if (allReserveOrder.size() - 1 != i) {
-                    bw.newLine(); // 最終行は改行しない
-                }
-            }
+            // 書き込み
+            FileUtil.writeFile(filePath, allReserveOrder);
 
         } catch (IOException e) {
             throw new KadaiException(ErrorCode.RESERVEFILE_OUTPUT_ERROR.getErrorCode());
-        } finally {
-            if (null != bw) {
-                try {
-                    bw.close();
-                    bw.flush();
-                } catch (IOException e) {
-                    // finallyでは例外投げない
-                }
-            }
         }
         return reserveFileDir;
     }
