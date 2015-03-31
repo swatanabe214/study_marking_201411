@@ -151,7 +151,7 @@ public class Kadai_Lv1 {
                                                 break;
                                             case 3:
                                                 // 【数量】整数チェック
-                                                if (!array[j].matches("^[0-9]+$")) {
+                                                if (!array[j].matches(AppConstants.BYTE_NUMBERS)) {
                                                     throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                                 }
                                                 oneOrderData.setQuantity(Integer.parseInt(array[j]));

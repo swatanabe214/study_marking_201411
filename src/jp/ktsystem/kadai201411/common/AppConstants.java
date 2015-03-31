@@ -30,5 +30,7 @@ public class AppConstants {
     public static final String RESERVE_DIR = "reserve";
     /** 退避ファイル名 */
     public static final String RESERVEORDER_OUTPUTFILENAME = "reservation.dat";
+    /** 半角数字チェック用 */
+    public static final String BYTE_NUMBERS = "^[0-9]+$";
 
 }
