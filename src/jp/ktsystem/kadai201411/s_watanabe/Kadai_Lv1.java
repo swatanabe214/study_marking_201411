@@ -2,6 +2,9 @@ package jp.ktsystem.kadai201411.s_watanabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -57,7 +60,7 @@ public class Kadai_Lv1 {
                 }
 
                 // ファイル名ソート
-                Collections.sort(orderFileNameList);
+                Collections.sort(orderFileNameList, new OrderFileComparator());
 
             } else {
                 throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
@@ -102,6 +105,13 @@ public class Kadai_Lv1 {
 
                         try {
 
+                            // 文字コード（UTF-8）判定
+                            Path path = Paths.get(filePath);
+                            byte[] bytes = Files.readAllBytes(path);
+                            if (false == FileUtil.isUTF8(bytes)) {
+                                throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
+                            }
+
                             // ファイル読み込み
                             List<String> fileStrList = new ArrayList<String>();
                             fileStrList.addAll(FileUtil.readFile(file));
@@ -141,10 +151,10 @@ public class Kadai_Lv1 {
                                                 break;
                                             case 3:
                                                 // 【数量】整数チェック
-                                                if (!array[j].matches("^[0-9]+$")) {
+                                                if (!array[j].matches(AppConstants.BYTE_NUMBERS)) {
                                                     throw new KadaiException(ErrorCode.ORDERFILE_FORMAT_ERROR.getErrorCode());
                                                 }
-                                                oneOrderData.setQuantity(array[j]);
+                                                oneOrderData.setQuantity(Integer.parseInt(array[j]));
                                                 break;
                                             case 4:
                                                 // 【納期】yyyymmddフォーマットチェック
@@ -165,6 +175,7 @@ public class Kadai_Lv1 {
                                             if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
                                                 allOrderData.remove(k);
                                                 count--;
+                                                break;
                                             }
                                         }
 
@@ -228,7 +239,7 @@ public class Kadai_Lv1 {
 
                         // 受注情報１件分
                         OrderData item = allOrderData.get(i);
-                        count = Integer.parseInt(item.getQuantity());
+                        count = item.getQuantity();
 
                         for (int j = 0; j < allOrder.size(); j++) {
 

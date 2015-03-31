@@ -5,10 +5,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
@@ -23,19 +27,28 @@ public class Kadai_Lv2 {
      * 異常系の場合、エラーコードを投げます。</p>
      *
      * @param String anOutputDir 退避ファイルディレクトリ
-     * @param List<String[]> orderInfoList 受注情報リスト
+     * @param List<String> orderInfoList 受注情報リスト
      * @throws KadaiException エラー発生時投げる例外
      */
     public static void readReserveFile(String anOutputDir, List<OrderData> allOrderData) throws KadaiException {
 
         if (null != anOutputDir) {
 
-            File reserveFile = new File(anOutputDir + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
+            String reserveFilePath = anOutputDir + "\\" + AppConstants.RESERVE_DIR +
+                    "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME;
+            File reserveFile = new File(reserveFilePath);
 
             if (reserveFile.exists()) {
                 if (0 < reserveFile.length()) {
 
                     try {
+
+                        // 文字コード（UTF-8）判定
+                        Path path = Paths.get(reserveFilePath);
+                        byte[] bytes = Files.readAllBytes(path);
+                        if (false == FileUtil.isUTF8(bytes)) {
+                            throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
+                        }
 
                         // ファイル読み込み
                         List<String> fileStrList = new ArrayList<String>();
@@ -54,7 +67,7 @@ public class Kadai_Lv2 {
                                 oneOrderData.setOrderID(array[0]);
                                 oneOrderData.setName(array[1]);
                                 oneOrderData.setProductName(array[2]);
-                                oneOrderData.setQuantity(array[3]);
+                                oneOrderData.setQuantity(Integer.parseInt(array[3]));
                                 oneOrderData.setDeliveryDate(array[4]);
 
                                 // 配列をリストにつめる
@@ -93,76 +106,27 @@ public class Kadai_Lv2 {
             throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
         }
 
-        File incomeFile = new File(anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME);
+        String incomeFilePath = anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME;
+        File incomeFile = new File(incomeFilePath);
 
         // 入金情報ファイル存在チェック
         if (incomeFile.exists()) {
             if (0 < incomeFile.length()) {
 
                 try {
+                    // 文字コード（UTF-8）判定
+                    Path path = Paths.get(incomeFilePath);
+                    byte[] bytes = Files.readAllBytes(path);
+                    if (false == FileUtil.isUTF8(bytes)) {
+                        throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
+                    }
 
-                    // ファイル読み込み
+                    // 入金情報ファイル読み込み
                     List<String> fileStrList = new ArrayList<String>();
                     fileStrList.addAll(FileUtil.readFile(incomeFile));
 
-                    IncomeData oneIncomeData = new IncomeData();
-
-                    int count = 0;
-                    // 最終行まで
-                    for (String str : fileStrList) {
-
-                        oneIncomeData = new IncomeData();
-                        count++;
-
-                        if (!"".equals(str) || count != fileStrList.size()) {
-                            
-                            String[] array = str.split(",", -1);
-                            if (2 == array.length) {
-
-                                for (int i = 0; i < array.length; i++) {
-
-                                    // 【受注ID・入金日時】必須チェック
-                                    if (null == array[i] || "".equals(array[i])) {
-
-                                        throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-
-                                    } else if (1 == i) {
-
-                                        // 【入金日時】yyyymmddhhmmssフォーマットチェック
-                                        try {
-                                            dateFormat.parse(array[i]);
-                                        } catch (ParseException e) {
-                                            throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-                                        }
-                                    }
-
-                                    // １レコードをデータリストにつめる
-                                    if (0 == i) {
-                                        oneIncomeData.setOrderID(array[i]);
-                                    } else if (1 == i) {
-                                        oneIncomeData.setDateAndTime(array[i]);
-                                    }
-                                }
-
-                                // 【受注ID】重複チェック
-                                for (int j = 0; j < allIncomeData.size(); j++) {
-                                    if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
-
-                                        // 【入金日時】早い方を正とする
-                                        if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
-                                                .toString())) {
-                                            allIncomeData.remove(j);
-                                        }
-                                    }
-                                }
-                                // リストにつめる
-                                allIncomeData.add(oneIncomeData);
-
-                            } else {
-                                throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
-                            }
-                        }
-                    }
+                    // 入金情報リストの作成
+                    createIncomeFileList(fileStrList, dateFormat, allIncomeData);
 
                 } catch (IOException e) {
                     throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
@@ -172,6 +136,108 @@ public class Kadai_Lv2 {
             }
         } else {
             throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
+        }
+    }
+
+    /**
+     * <p>入金情報リストを作成します。</p>
+     *
+     * @param List<String> fileStrList 読み込んだ入金情報
+     * @param SimpleDateFormat dateFormat 日付フォーマット
+     * @param List<IncomeData> allIncomeData 入金情報リスト
+     * @throws KadaiException 例外発生時投げる例外
+     */
+    public static void createIncomeFileList(List<String> fileStrList,
+            SimpleDateFormat dateFormat, List<IncomeData> allIncomeData) throws KadaiException {
+
+        IncomeData oneIncomeData = new IncomeData();
+
+        // 最終行まで
+        for (int count = 0; count < fileStrList.size(); count++) {
+
+            String str = fileStrList.get(count);
+            oneIncomeData = new IncomeData();
+
+            if (!"".equals(str) || count != fileStrList.size()) {
+
+                String[] array = str.split(",", -1);
+                if (2 == array.length) {
+
+                    // 入金情報のデータチェック
+                    oneIncomeData = checkIncomeData(array, dateFormat, oneIncomeData);
+
+                    // 【受注ID】重複チェック
+                    removeSameID(oneIncomeData, allIncomeData);
+
+                    // リストにつめる
+                    allIncomeData.add(oneIncomeData);
+
+                } else {
+                    throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                }
+            }
+        }
+    }
+
+    /**
+     * <p>入金情報のデータをチェックします。</p>
+     *
+     * @param String[] array 入金情報
+     * @param SimpleDateFormat dateFormat 日付フォーマット
+     * @param IncomeData oneIncomeData 入金情報データクラス
+     * @return 入金情報１件
+     * @throws KadaiException エラー発生時投げる例外
+     */
+    public static IncomeData checkIncomeData(String[] array,
+            SimpleDateFormat dateFormat, IncomeData oneIncomeData) throws KadaiException {
+
+        for (int i = 0; i < array.length; i++) {
+
+            // 【受注ID・入金日時】必須チェック
+            if (null == array[i] || "".equals(array[i])) {
+
+                throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+
+            } else if (1 == i) {
+
+                // 【入金日時】yyyymmddhhmmssフォーマットチェック
+                try {
+                    dateFormat.parse(array[i]);
+                } catch (ParseException e) {
+                    throw new KadaiException(ErrorCode.INCOMEFILE_FORMAT_ERROR.getErrorCode());
+                }
+            }
+
+            // １レコードをデータリストにつめる
+            if (0 == i) {
+                oneIncomeData.setOrderID(array[i]);
+            } else if (1 == i) {
+                oneIncomeData.setDateAndTime(array[i]);
+            }
+        }
+
+        return oneIncomeData;
+    }
+
+    /**
+     * <p>受注IDが重複している入金情報リストのデータを削除します。</p>
+     *
+     * @param IncomeData oneIncomeData 入金情報
+     * @param List<IncomeData> allIncomeData 入金情報リスト
+     */
+    public static void removeSameID(IncomeData oneIncomeData, List<IncomeData> allIncomeData) {
+
+        // 【受注ID】重複チェック
+        for (int j = 0; j < allIncomeData.size(); j++) {
+            if (allIncomeData.get(j).getOrderID().equals(oneIncomeData.getOrderID())) {
+
+                // 【入金日時】早い方を正とする
+                if (Long.parseLong(oneIncomeData.getDateAndTime().toString())
+                        <= Long.parseLong(allIncomeData.get(j).getDateAndTime().toString())) {
+                    allIncomeData.remove(j);
+                    break;
+                }
+            }
         }
     }
 
@@ -255,6 +321,11 @@ public class Kadai_Lv2 {
                             reserveOrder.clear();
                         }
                     }
+
+                    HashSet<String> hushSet = new HashSet<>();
+                    hushSet.addAll(allReserveOrder);
+                    allReserveOrder = new ArrayList<String>();
+                    allReserveOrder.addAll(hushSet);
 
                     // ソート：入金日時の昇順。入金日時が同じ場合は受注IDの昇順。
                     Collections.sort(allProductOrder, new ProductOrderComparator());
