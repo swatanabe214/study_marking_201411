@@ -1,9 +1,9 @@
 package jp.ktsystem.kadai201411.common;
 
-public final class KadaiException extends Exception {
+public class KadaiException extends Exception {
 
 	private static final long serialVersionUID = 1L;
-	private int errorCode;
+	private final int errorCode;
 
 	/**
 	 * <p>コンストラクタ</p>
