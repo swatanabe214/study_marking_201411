@@ -5,10 +5,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import jp.ktsystem.kadai201411.common.AppConstants;
@@ -23,19 +27,27 @@ public class Kadai_Lv2 {
      * 異常系の場合、エラーコードを投げます。</p>
      *
      * @param String anOutputDir 退避ファイルディレクトリ
-     * @param List<String[]> orderInfoList 受注情報リスト
+     * @param List<String> orderInfoList 受注情報リスト
      * @throws KadaiException エラー発生時投げる例外
      */
     public static void readReserveFile(String anOutputDir, List<OrderData> allOrderData) throws KadaiException {
 
         if (null != anOutputDir) {
 
-            File reserveFile = new File(anOutputDir + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME);
+            String reserveFilePath = anOutputDir + "\\" + AppConstants.RESERVE_DIR + "\\" + AppConstants.RESERVEORDER_OUTPUTFILENAME;
+            File reserveFile = new File(reserveFilePath);
 
             if (reserveFile.exists()) {
                 if (0 < reserveFile.length()) {
 
                     try {
+
+                        // 文字コード（UTF-8）判定
+                        Path path = Paths.get(reserveFilePath);
+                        byte[] bytes = Files.readAllBytes(path);
+                        if (false == FileUtil.isUTF8(bytes)) {
+                            throw new KadaiException(ErrorCode.RESERVEFILE_INPUT_ERROR.getErrorCode());
+                        }
 
                         // ファイル読み込み
                         List<String> fileStrList = new ArrayList<String>();
@@ -54,7 +66,7 @@ public class Kadai_Lv2 {
                                 oneOrderData.setOrderID(array[0]);
                                 oneOrderData.setName(array[1]);
                                 oneOrderData.setProductName(array[2]);
-                                oneOrderData.setQuantity(array[3]);
+                                oneOrderData.setQuantity(Integer.parseInt(array[3]));
                                 oneOrderData.setDeliveryDate(array[4]);
 
                                 // 配列をリストにつめる
@@ -93,13 +105,21 @@ public class Kadai_Lv2 {
             throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
         }
 
-        File incomeFile = new File(anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME);
+        String incomeFilePath = anIncomeFileDir + "\\" + AppConstants.INCOME_FILENAME;
+        File incomeFile = new File(incomeFilePath);
 
         // 入金情報ファイル存在チェック
         if (incomeFile.exists()) {
             if (0 < incomeFile.length()) {
 
                 try {
+
+                    // 文字コード（UTF-8）判定
+                    Path path = Paths.get(incomeFilePath);
+                    byte[] bytes = Files.readAllBytes(path);
+                    if (false == FileUtil.isUTF8(bytes)) {
+                        throw new KadaiException(ErrorCode.INCOMEFILE_INPUT_ERROR.getErrorCode());
+                    }
 
                     // ファイル読み込み
                     List<String> fileStrList = new ArrayList<String>();
@@ -115,7 +135,7 @@ public class Kadai_Lv2 {
                         count++;
 
                         if (!"".equals(str) || count != fileStrList.size()) {
-                            
+
                             String[] array = str.split(",", -1);
                             if (2 == array.length) {
 
@@ -152,6 +172,7 @@ public class Kadai_Lv2 {
                                         if (Long.parseLong(oneIncomeData.getDateAndTime().toString()) <= Long.parseLong(allIncomeData.get(j).getDateAndTime()
                                                 .toString())) {
                                             allIncomeData.remove(j);
+                                            break;
                                         }
                                     }
                                 }
@@ -255,6 +276,11 @@ public class Kadai_Lv2 {
                             reserveOrder.clear();
                         }
                     }
+
+                    HashSet<String> hushSet = new HashSet<>();
+                    hushSet.addAll(allReserveOrder);
+                    allReserveOrder = new ArrayList<String>();
+                    allReserveOrder.addAll(hushSet);
 
                     // ソート：入金日時の昇順。入金日時が同じ場合は受注IDの昇順。
                     Collections.sort(allProductOrder, new ProductOrderComparator());
