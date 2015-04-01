@@ -88,7 +88,8 @@ public class Kadai {
             }
 
             // 処理済みの受注情報ファイルをバックアップディレクトリに移動
-            if (0 < countOrErrorCode) {
+            if (0 < allOrderData.size())
+            {
                 countOrErrorCode = Kadai_Lv2.removeOrderFile(aBackupDir, backupFileNameList, countOrErrorCode);
             }
             return countOrErrorCode;

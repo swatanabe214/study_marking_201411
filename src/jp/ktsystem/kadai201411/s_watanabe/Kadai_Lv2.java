@@ -292,6 +292,17 @@ public class Kadai_Lv2 {
                         // 退避受注情報リスト
                         reserveOrder.add(items.getOrderID() + "," + items.getName() + "," + items.getProductName() + ","
                                 + items.getQuantity() + "," + items.getDeliveryDate());
+                        for (int num = 0; num < allReserveOrder.size(); num++) {
+                            if (allReserveOrder.get(num).startsWith(orderID)) {
+                                if (Long.parseLong(items.getDeliveryDate().toString())
+                                        <=  Long.parseLong(
+                                                allReserveOrder.get(num).substring(
+                                                        allReserveOrder.get(num).length() - 8))) {
+                                    allReserveOrder.remove(num);
+                                    break;
+                                }
+                            }
+                        }
                         allReserveOrder.addAll(reserveOrder);
 
                         // 入金情報リスト
@@ -308,12 +319,14 @@ public class Kadai_Lv2 {
                                 oneProductOrder.setDateAndTime(allIncomeData.get(j).getDateAndTime());
 
                                 allProductOrder.add(oneProductOrder);
+                                allIncomeData.remove(j);
                                 // レコード件数
                                 countOrErrorCode++;
 
                                 // 退避受注情報リストから生産指示情報を削除
                                 if (0 < allReserveOrder.size()) {
-                                    k = allReserveOrder.indexOf(items.getOrderID() + "," + items.getName() + "," + items.getProductName() + ","
+                                    k = allReserveOrder.indexOf(items.getOrderID() + ","
+                                            + items.getName() + "," + items.getProductName() + ","
                                             + items.getQuantity() + "," + items.getDeliveryDate());
                                     allReserveOrder.remove(k);
                                 }
@@ -374,7 +387,10 @@ public class Kadai_Lv2 {
             for (int i = 0; i < backupFileNameList.size(); i++) {
                 File file = new File(backupFileNameList.get(i));
                 // 移動
-                file.renameTo(new File(dir, file.getName()));
+                if (!file.renameTo(new File(dir, file.getName())))
+                {
+                    return ErrorCode.BACKUP_FAILURE.getErrorCode();
+                }
             }
         } else {
             return ErrorCode.BACKUP_FAILURE.getErrorCode();

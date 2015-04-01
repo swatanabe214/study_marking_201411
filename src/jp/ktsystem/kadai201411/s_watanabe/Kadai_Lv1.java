@@ -90,7 +90,6 @@ public class Kadai_Lv1 {
         // 日付の厳密チェックON
         dateFormat.setLenient(false);
 
-        int count = 0;
         // 受注情報ファイルを一つずつ処理する
         for (int i = 0; i < orderFileNameList.size(); i++) {
 
@@ -116,7 +115,7 @@ public class Kadai_Lv1 {
                             fileStrList.addAll(FileUtil.readFile(file));
 
                             // 受注情報リスト作成
-                            createOrderInfoList(fileStrList, count, allOrderData, dateFormat);
+                            createOrderInfoList(fileStrList, allOrderData, dateFormat);
 
                         } catch (IOException e) {
                             throw new KadaiException(ErrorCode.ORDERFILE_INPUT_ERROR.getErrorCode());
@@ -140,7 +139,7 @@ public class Kadai_Lv1 {
      * @param SimpleDateFormat dateFormat 日付フォーマット
      * @throws KadaiException エラー発生時に投げる例外
      */
-    public static void createOrderInfoList(List<String> fileStrList, int count,
+    public static void createOrderInfoList(List<String> fileStrList,
             List<OrderData> allOrderData, SimpleDateFormat dateFormat) throws KadaiException {
 
         OrderData oneOrderData = new OrderData();
@@ -151,7 +150,6 @@ public class Kadai_Lv1 {
             String str = fileStrList.get(rowCount);
 
             oneOrderData = new OrderData();
-            count++;
 
             if (!"".equals(str) || rowCount != fileStrList.size()) {
 
@@ -162,10 +160,9 @@ public class Kadai_Lv1 {
                     oneOrderData = checkOrderData(array, oneOrderData, dateFormat);
 
                     // 【受注ID】重複チェック
-                    for (int k = 0; k < count - 1; k++) {
+                    for (int k = 0; k < allOrderData.size(); k++) {
                         if (allOrderData.get(k).getOrderID().equals(oneOrderData.getOrderID())) {
                             allOrderData.remove(k);
-                            count--;
                             break;
                         }
                     }
